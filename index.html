@@ -7,7 +7,7 @@
     #tetris   { margin: 1em auto; padding: 1em; border: 4px solid black; border-radius: 10px; background-color: #F8F8F8; }
     #stats    { display: inline-block; vertical-align: top; }
     #canvas   { display: inline-block; vertical-align: top; background: url(texture.jpg); box-shadow: 10px 10px 10px #999; border: 2px solid #333; }
-    #menu     { display: inline-block; vertical-align: top; position: relative; }
+    #menu     { display: inline-block; vertical-align: top; position: relative; display: none;}
     #menu p   { margin: 0.5em 0; text-align: center; }
     #menu p a { text-decoration: none; color: black; }
     #upcoming { display: block; margin: 0 auto; background-color: #E0E0E0; }
@@ -21,22 +21,53 @@
     @media screen and (min-width: 700px) and (min-height: 700px)  { #tetris { font-size: 1.75em; width: 650px; } #menu { width: 300px; height: 600px; } #upcoming { width: 150px; height: 150px; } #canvas { width: 300px; height: 600px; } } /* 30px chunks */
     @media screen and (min-width: 800px) and (min-height: 800px)  { #tetris { font-size: 2.00em; width: 750px; } #menu { width: 350px; height: 700px; } #upcoming { width: 175px; height: 175px; } #canvas { width: 350px; height: 700px; } } /* 35px chunks */
     @media screen and (min-width: 900px) and (min-height: 900px)  { #tetris { font-size: 2.25em; width: 850px; } #menu { width: 400px; height: 800px; } #upcoming { width: 200px; height: 200px; } #canvas { width: 400px; height: 800px; } } /* 40px chunks */
+
+    body{
+
+      margin: 0;
+      padding: 0;
+      height: 1080px;
+    }
+
+    canvas.sidebyside{
+
+      float: left;
+      width: 50%;
+      height: 100%;
+    }
+
+    #sbs_left{
+      /*background-color: blue;*/
+    }
+
+    #sbs_right{
+      /*background-color: red;*/
+    }
+
   </style>
 </head>
 
 <body>
 
-  <div id="tetris">
-    <div id="menu">
-      <p id="start"><a href="javascript:play();">Press Space to Play.</a></p>
-      <p><canvas id="upcoming"></canvas></p>
-      <p>score <span id="score">00000</span></p>
-      <p>rows <span id="rows">0</span></p>
-    </div>
-    <canvas id="canvas">
-      Sorry, this example cannot be run because your browser does not support the &lt;canvas&gt; element
+    <canvas id="sbs_left" class="sidebyside">
+
     </canvas>
-  </div>
+
+    <canvas id="sbs_right" class="sidebyside">
+
+    </canvas>
+
+    <div id="menu">
+          <p id="start"><a href="javascript:play();">Press Space to Play.</a></p>
+          <p><canvas id="upcoming"></canvas></p>
+          <p>score <span id="score">00000</span></p>
+          <p>rows <span id="rows">0</span></p>
+        </div>
+
+    <!-- <canvas id="canvas">
+      Sorry, this example cannot be run because your browser does not support the &lt;canvas&gt; element
+    </canvas> -->
+
 
   <script src="stats.js"></script>
   <script>
@@ -71,9 +102,12 @@
     var KEY     = { ESC: 27, SPACE: 32, LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40 },
         DIR     = { UP: 0, RIGHT: 1, DOWN: 2, LEFT: 3, MIN: 0, MAX: 3 },
         stats   = new Stats(),
-        canvas  = get('canvas'),
-        ctx     = canvas.getContext('2d'),
-        ucanvas = get('upcoming'),
+        courtCanvas  = get('sbs_left'),
+        courtCtx     = courtCanvas.getContext('2d'),
+        falldownCanvas  = get('sbs_right'),
+        falldownCtx     = falldownCanvas.getContext('2d'),
+
+        ucanvas = get('sbs_right'),
         uctx    = ucanvas.getContext('2d'),
         speed   = { start: 0.6, decrement: 0.005, min: 0.1 }, // how long before piece drops by 1 row (seconds)
         nx      = 10, // width of tetris court (in blocks)
@@ -182,7 +216,7 @@
         draw();
         stats.update();
         last = now;
-        requestAnimationFrame(frame, canvas);
+        requestAnimationFrame(frame, courtCanvas);
       }
 
       resize(); // setup all our sizing information
@@ -202,14 +236,19 @@
     }
 
     function resize(event) {
-      canvas.width   = canvas.clientWidth;  // set canvas logical size equal to its physical size
-      canvas.height  = canvas.clientHeight; // (ditto)
+      courtCanvas.width   = courtCanvas.clientWidth;  // set canvas logical size equal to its physical size
+      courtCanvas.height  = courtCanvas.clientHeight; // (ditto)
+
+      falldownCanvas.width   = falldownCanvas.clientWidth;  // set canvas logical size equal to its physical size
+      falldownCanvas.height  = falldownCanvas.clientHeight; // (ditto)
+
       ucanvas.width  = ucanvas.clientWidth;
       ucanvas.height = ucanvas.clientHeight;
-      dx = canvas.width  / nx; // pixel size of a single tetris block
-      dy = canvas.height / ny; // (ditto)
+      dx = courtCanvas.width  / nx; // pixel size of a single tetris block
+      dy = courtCanvas.height / ny; // (ditto)
       invalidate();
       invalidateNext();
+
     }
 
     function keydown(ev) {
@@ -370,32 +409,56 @@
     function invalidateRows()     { invalid.rows   = true; }
 
     function draw() {
-      ctx.save();
-      ctx.lineWidth = 1;
-      ctx.translate(0.5, 0.5); // for crisp 1px black lines
+      courtCtx.save();
+      courtCtx.lineWidth = 1;
+      courtCtx.translate(0.5, 0.5); // for crisp 1px black lines
+
+      falldownCtx.save();
+      falldownCtx.lineWidth = 1;
+      falldownCtx.translate(0.5, 0.5); // for crisp 1px black lines
+
+
       drawCourt();
       drawNext();
       drawScore();
       drawRows();
-      ctx.restore();
+
+      courtCtx.restore();
+
+      falldownCtx.restore();
     }
 
     function drawCourt() {
       if (invalid.court) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        courtCtx.clearRect(0, 0, courtCanvas.width, courtCanvas.height);
+        if (playing){
+
+          //drawPiece(courtCtx, current.type, current.x, current.y, current.dir);
+          drawFallDown();
+
+        }
+
+        courtCtx.strokeRect(0, 0, nx*dx - 1, ny*dy - 1); // court boundary
+        invalid.court = false;
+      }
+    }
+
+    function drawFallDown() {
+
+        falldownCtx.clearRect(0, 0, courtCanvas.width, courtCanvas.height);
         if (playing)
-          drawPiece(ctx, current.type, current.x, current.y, current.dir);
+          drawPiece(falldownCtx, current.type, current.x, current.y, current.dir);
+
         var x, y, block;
         for(y = 0 ; y < ny ; y++) {
           for (x = 0 ; x < nx ; x++) {
             if (block = getBlock(x,y))
-              drawBlock(ctx, x, y, block.color);
+              drawBlock(courtCtx, x, y, block.color);
           }
         }
-        ctx.strokeRect(0, 0, nx*dx - 1, ny*dy - 1); // court boundary
-        invalid.court = false;
-      }
+
     }
+
 
     function drawNext() {
       if (invalid.next) {
@@ -420,7 +483,7 @@
 
     function drawRows() {
       if (invalid.rows) {
-        html('rows', rows);
+        ('rows', rows);
         invalid.rows = false;
       }
     }
